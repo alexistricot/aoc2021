@@ -23,6 +23,7 @@ end
 
 # First part
 global score = 0
+global min_levels = []
 
 function is_min(
     levels::Array{Int},
@@ -63,6 +64,7 @@ function is_min(
     # current number is a local minimum
     if length(infs) == 0
         global score += n + 1
+        append!(min_levels, [(i, j)])
         println(i, ", ", j)
         is_min(levels, i + 2, j, true, true)
         is_min(levels, i, j + 2, true, true)
@@ -95,4 +97,45 @@ for i = 1:n_row
     print("\n")
 end
 
-@printf("Score: %d\n", score)
+@printf("First part: %d\n", score)
+
+println(min_levels)
+
+# Second part
+
+function get_basin_size(levels::Array{Int}, i::Int, j::Int)
+    # mark this level as passed through
+    through[i, j] = true
+    # end recursion
+    if levels[i, j] == 9
+        return 0
+    end
+    # adjacent numbers
+    tups = [
+        (max(i - 1, 1), j),
+        (min(i + 1, n_row), j),
+        (i, max(j - 1, 1)),
+        (i, min(j + 1, n_col)),
+    ]
+    # get the basin sizes for all unvisited adjacent levels
+    visit = [get_basin_size(levels, a, b) for (a, b) in tups if !through[a, b]]
+    # if all adjacent levels have been visited, return one for the current level
+    if length(visit) == 0
+        return 1
+    end
+    # add one to basin size for the current level, and add adjacent unvisited levels basin sizes
+    return 1 + sum(visit)
+end
+
+basin_sizes = []
+for (i, j) in min_levels
+    global through = fill(false, n_row, n_col)
+    append!(basin_sizes, get_basin_size(levels, i, j))
+end
+
+println(basin_sizes)
+
+@printf(
+    "Second part: %d\n",
+    sort(basin_sizes)[end] * sort(basin_sizes)[end-1] * sort(basin_sizes)[end-2]
+)
